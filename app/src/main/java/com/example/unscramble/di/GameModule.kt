@@ -2,6 +2,7 @@ package com.example.unscramble.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.unscramble.repository.GameRepositry
 import com.example.unscramble.room.GameDao
 import com.example.unscramble.room.GameDb
 import dagger.Module
@@ -23,5 +24,5 @@ object GameModule {
     fun provideGameDao(gameDatabase: GameDb): GameDao = gameDatabase.gameDao()
 
     @Provides
-    fun provideGameRepo(gameDao: GameDao): gameRepository
+    fun provideGameRepo(gameDao: GameDao): GameRepositry = GameRepositry(gameDao)
 }
