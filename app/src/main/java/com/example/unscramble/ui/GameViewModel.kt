@@ -19,19 +19,33 @@ package com.example.unscramble.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
 import com.example.unscramble.data.MAX_NO_OF_WORDS
 import com.example.unscramble.data.SCORE_INCREASE
 import com.example.unscramble.data.allWords
+import com.example.unscramble.repository.GameRepositry
+import com.example.unscramble.room.Game
+import dagger.hilt.android.lifecycle.HiltViewModel
+import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel containing the app data and methods to process the data
  */
-class GameViewModel : ViewModel() {
+@HiltViewModel
+class GameViewModel @Inject constructor(private val gameRepositry: GameRepositry) : ViewModel() {
+
+    private val allAnswers = gameRepositry.getAllAnswers()
+    val answers: LiveData<List<Game>> = allAnswers.asLiveData()
+
+    fun addAnswers(game: String) = viewModelScope.launch { gameRepositry.insertAnswer(game) }
 
     // Game UI state
     private val _uiState = MutableStateFlow(GameUiState())
@@ -73,6 +87,7 @@ class GameViewModel : ViewModel() {
             // and call updateGameState() to prepare the game for next round
             val updatedScore = _uiState.value.score.plus(SCORE_INCREASE)
             updateGameState(updatedScore)
+            addAnswers(userGuess)
         } else {
             // User's guess is wrong, show an error
             _uiState.update { currentState ->
