@@ -47,6 +47,12 @@ class GameViewModel @Inject constructor(private val gameRepositry: GameRepositry
 
     fun addAnswers(game: String) = viewModelScope.launch { gameRepositry.insertAnswer(game) }
 
+    fun deleteAllAnswers() = viewModelScope.launch { gameRepositry.deleteAllAnswers() }
+
+    fun showAnswers(show: Boolean) {
+        _uiState.update { it.copy(isShowingAnswers = show) }
+    }
+
     // Game UI state
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
@@ -66,6 +72,7 @@ class GameViewModel @Inject constructor(private val gameRepositry: GameRepositry
      * Re-initializes the game data to restart the game.
      */
     fun resetGame() {
+        deleteAllAnswers()
         usedWords.clear()
         _uiState.value = GameUiState(currentScrambledWord = pickRandomWordAndShuffle())
     }

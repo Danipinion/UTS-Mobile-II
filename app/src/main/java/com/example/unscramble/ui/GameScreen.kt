@@ -19,6 +19,7 @@ import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -54,6 +55,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unscramble.R
 import com.example.unscramble.ui.theme.UnscrambleTheme
@@ -61,9 +66,17 @@ import com.example.unscramble.ui.theme.UnscrambleTheme
 @Composable
 fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
     val gameUiState by gameViewModel.uiState.collectAsState()
+    val answers by gameViewModel.answers.observeAsState(emptyList())
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
 
-    Column(
+    if (gameUiState.isShowingAnswers) {
+        AnswersScreen(
+            answers = answers,
+            onBack = { gameViewModel.showAnswers(false) },
+            mediumPadding = mediumPadding
+        )
+    } else {
+        Column(
         modifier = Modifier
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
@@ -123,11 +136,14 @@ fun GameScreen(gameViewModel: GameViewModel = viewModel()) {
         if (gameUiState.isGameOver) {
             FinalScoreDialog(
                 score = gameUiState.score,
-                onPlayAgain = { gameViewModel.resetGame() }
+                onPlayAgain = { gameViewModel.resetGame() },
+                onShowAnswers = { gameViewModel.showAnswers(true) }
             )
         }
     }
 }
+}
+
 
 @Composable
 fun GameStatus(score: Int, modifier: Modifier = Modifier) {
@@ -220,6 +236,7 @@ fun GameLayout(
 private fun FinalScoreDialog(
     score: Int,
     onPlayAgain: () -> Unit,
+    onShowAnswers: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val activity = (LocalContext.current as Activity)
@@ -243,11 +260,78 @@ private fun FinalScoreDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onPlayAgain) {
-                Text(text = stringResource(R.string.play_again))
+            Column {
+                TextButton(onClick = onShowAnswers) {
+                    Text(text = "Lihat Jawaban Benar")
+                }
+                TextButton(onClick = onPlayAgain) {
+                    Text(text = stringResource(R.string.play_again))
+                }
             }
         }
     )
+}
+
+@Composable
+fun AnswersScreen(
+    answers: List<com.example.unscramble.room.Game>,
+    onBack: () -> Unit,
+    mediumPadding: androidx.compose.ui.unit.Dp
+) {
+    Column(
+        modifier = Modifier
+            .statusBarsPadding()
+            .safeDrawingPadding()
+            .padding(mediumPadding),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Jawaban Benar",
+            style = typography.titleLarge,
+            modifier = Modifier.padding(bottom = mediumPadding)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+        ) {
+            if (answers.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "Belum ada jawaban benar", style = typography.bodyLarge)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(mediumPadding)
+                ) {
+                    items(answers) { game ->
+                        Text(
+                            text = game.answer,
+                            style = typography.bodyLarge,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
+
+        Button(
+            onClick = onBack,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = mediumPadding)
+        ) {
+            Text(text = "Kembali")
+        }
+    }
 }
 
 @Preview(showBackground = true)
